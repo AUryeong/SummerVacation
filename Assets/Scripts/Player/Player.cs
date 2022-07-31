@@ -8,6 +8,13 @@ public class Player : Unit
     public static Player Instance;
     public List<Item> items = new List<Item>();
 
+    #region ·¹º§
+    public float xpAdd = 100f;
+    public int lv = 0;
+    public float exp = 0;
+    public float maxExp = 100f;
+    #endregion
+
     [SerializeField]
     GameObject arrowObj;
     [SerializeField]

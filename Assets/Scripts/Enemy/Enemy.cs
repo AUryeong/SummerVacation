@@ -72,24 +72,31 @@ public class Enemy : Unit
             if (projectile.isHitable)
             {
                 projectile.OnHit(this);
-                float damage = projectile.GetDamage(Player.Instance.GetDamage());
-                stat.hp -= damage;
-                GameManager.Instance.ShowDamage((int)damage, transform.position, Color.white);
-                if (stat.hp <= 0)
+                if(Random.Range(0f,100f) > stat.evade)
                 {
-                    dying = true;
-                    projectile.OnKill();
-                    Player.Instance.OnKill(projectile);
-                    transform.DOMoveX(transform.position.x + ((direction == Direction.Left) ? 1 : -1), 0.5f);
-                    spriteRenderer.DOFade(0, 0.5f).
-                    OnComplete(() => gameObject.SetActive(false));
-                    spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart);
-                    GameManager.Instance.inCameraEnemies.Remove(this);
+                    float damage = projectile.GetDamage(Player.Instance.GetDamage());
+                    stat.hp -= damage;
+                    GameManager.Instance.ShowDamage((int)damage, transform.position, Color.white);
+                    if (stat.hp <= 0)
+                    {
+                        dying = true;
+                        projectile.OnKill();
+                        Player.Instance.OnKill(projectile);
+                        transform.DOMoveX(transform.position.x + ((direction == Direction.Left) ? 1 : -1), 0.5f);
+                        spriteRenderer.DOFade(0, 0.5f).
+                        OnComplete(() => gameObject.SetActive(false));
+                        spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart);
+                        GameManager.Instance.inCameraEnemies.Remove(this);
+                    }
+                    else
+                    {
+                        spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart).
+                        OnComplete(() => spriteRenderer.DOColor(Color.white, 0.1f).SetEase(Ease.InQuart));
+                    }
                 }
                 else
                 {
-                    spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart).
-                    OnComplete(() => spriteRenderer.DOColor(Color.white, 0.1f).SetEase(Ease.InQuart));
+                    GameManager.Instance.ShowText("MISS", transform.position, Color.white);
                 }
             }
         }
