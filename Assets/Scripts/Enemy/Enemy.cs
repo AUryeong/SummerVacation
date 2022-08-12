@@ -12,6 +12,7 @@ public class Enemy : Unit
     }
     protected Direction direction;
     protected SpriteRenderer spriteRenderer;
+    private Coroutine enemyFlashWhiteCo;
 
     protected virtual void Awake()
     {
@@ -23,7 +24,6 @@ public class Enemy : Unit
         spriteRenderer.color = Color.white;
         dying = false;
     }
-
 
     protected virtual void Update()
     {
@@ -38,7 +38,8 @@ public class Enemy : Unit
     {
         transform.Translate(stat.speed * deltaTime * (Player.Instance.transform.position - transform.position).normalized);
         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.y);
-        if(Player.Instance.transform.position.x - transform.position.x < 0)
+
+        if (Player.Instance.transform.position.x - transform.position.x < 0)
         {
             direction = Direction.Left;
             spriteRenderer.flipX = false;
@@ -58,6 +59,37 @@ public class Enemy : Unit
             GameManager.Instance.inCameraEnemies.Remove(this);
     }
 
+    protected virtual void OnHurt(Projectile projectile)
+    {
+        if (!projectile.isHitable)
+            return;
+        projectile.OnHit(this);
+
+        if (Random.Range(0f, 100f) <= stat.evade)
+        {
+            GameManager.Instance.ShowText("MISS", transform.position, Color.white);
+            return;
+        }
+
+        float damage = projectile.GetDamage(Player.Instance.GetDamage());
+        stat.hp -= damage;
+        GameManager.Instance.ShowDamage((int)damage, transform.position, Color.white);
+        enemyFlashWhiteCo = StartCoroutine(HitFlashWhite());
+        if (stat.hp > 0)
+        {
+            return;
+        }
+
+        dying = true;
+        projectile.OnKill();
+        Player.Instance.OnKill(projectile);
+        GameManager.Instance.OnKill(this);
+        transform.DOMoveX(transform.position.x + ((direction == Direction.Left) ? 1 : -1), 0.5f);
+        spriteRenderer.DOFade(0, 0.5f).
+            OnComplete(() => gameObject.SetActive(false));
+        spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart);
+    }
+
     protected override void OnTriggerEnter2D(Collider2D collider2D)
     {
         if (dying) return;
@@ -67,38 +99,14 @@ public class Enemy : Unit
             GameManager.Instance.inCameraEnemies.Add(this);
 
         else if (collider2D.CompareTag("Projectile"))
-        {
-            Projectile projectile = collider2D.GetComponent<Projectile>();
-            if (projectile.isHitable)
-            {
-                projectile.OnHit(this);
-                if(Random.Range(0f,100f) > stat.evade)
-                {
-                    float damage = projectile.GetDamage(Player.Instance.GetDamage());
-                    stat.hp -= damage;
-                    GameManager.Instance.ShowDamage((int)damage, transform.position, Color.white);
-                    if (stat.hp <= 0)
-                    {
-                        dying = true;
-                        projectile.OnKill();
-                        Player.Instance.OnKill(projectile);
-                        transform.DOMoveX(transform.position.x + ((direction == Direction.Left) ? 1 : -1), 0.5f);
-                        spriteRenderer.DOFade(0, 0.5f).
-                        OnComplete(() => gameObject.SetActive(false));
-                        spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart);
-                        GameManager.Instance.inCameraEnemies.Remove(this);
-                    }
-                    else
-                    {
-                        spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart).
-                        OnComplete(() => spriteRenderer.DOColor(Color.white, 0.1f).SetEase(Ease.InQuart));
-                    }
-                }
-                else
-                {
-                    GameManager.Instance.ShowText("MISS", transform.position, Color.white);
-                }
-            }
-        }
+            OnHurt(collider2D.GetComponent<Projectile>());
+    }
+
+    protected IEnumerator HitFlashWhite()
+    {
+        Material original = spriteRenderer.material;
+        spriteRenderer.material = GameManager.Instance.flashWhiteMaterial;
+        yield return new WaitForSeconds(0.2f);
+        spriteRenderer.material = original;
     }
 }

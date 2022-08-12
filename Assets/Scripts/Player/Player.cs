@@ -6,53 +6,89 @@ using DG.Tweening;
 public class Player : Unit
 {
     public static Player Instance;
-    public List<Item> items = new List<Item>();
+    private List<Item> items = new List<Item>();
 
-    #region 레벨
+    #region 레벨 변수
     public float xpAdd = 100f;
     public int lv = 0;
-    public float exp = 0;
+    protected float exp = 0;
     public float maxExp = 100f;
+    public float Exp
+    {
+        get
+        {
+            return exp;
+        }
+        set
+        {
+            exp = value * xpAdd / 100;
+            if (exp >= maxExp)
+            {
+                exp -= maxExp;
+                lv++;
+                maxExp = Mathf.Pow(lv, 1.3f) * 100;
+                GameManager.Instance.AddWeapon();
+            }
+            UIManager.Instance.UpdateLevel();
+        }
+    }
     #endregion
 
+    #region 화살표 변수
     [SerializeField]
     GameObject arrowObj;
     [SerializeField]
     SpriteRenderer arrowSprite;
+    Color arrowPressColor = new Color(0.7f, 0.7f, 0.7f);
+    Color arrowDefaultColor = Color.white;
+    float arrowFadeTime = 0.1f;
+    float arrowTurnSpeed = 20;
+    #endregion
 
-    #region 몹 충돌 관리
+    #region 몹 충돌 변수
+
     protected bool inv = false;
     protected bool hurtInv = false;
+
+    Color hitTextColor = new Color(255 / 255f, 66 / 255f, 66 / 255f);
+    float hitFadeInAlpha = 0.8f;
+    float hitFadeOutAlpha = 1f;
+    float hitFadeTime = 0.1f;
+
     [SerializeField]
     SpriteRenderer hpBarSprite;
-    Color hitTextColor = new Color(255 / 255f, 66 / 255f, 66 / 255f);
+    [HideInInspector]
     public List<Enemy> collisionEnemyList = new List<Enemy>();
     #endregion
 
-    #region 애니메이션 관리
+    #region 애니메이션 변수
     SpriteRenderer spriteRenderer;
     Animator animator;
+    float animatorScaleSpeed = 0.2f;
     #endregion
 
-    public Quaternion GetArrowRotation()
-    {
-        return arrowObj.transform.rotation;
-    }
-    protected virtual void Start()
+
+    protected virtual void Awake()
     {
         Instance = this;
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
     }
+    protected virtual void Start()
+    {
+    }
 
     protected virtual void Update()
     {
-        float deltaTime = Time.deltaTime;
-        Move(deltaTime);
-        HitCheck();
-        ArrowUpdate();
-        foreach (Item item in items)
-            item.OnUpdate(deltaTime);
+        if (UIManager.Instance.IsActable())
+        {
+            float deltaTime = Time.deltaTime;
+            Move(deltaTime);
+            HitCheck();
+            ArrowUpdate();
+            foreach (Item item in items)
+                item.OnUpdate(deltaTime);
+        }
     }
 
 
@@ -62,16 +98,44 @@ public class Player : Unit
             item.OnKill(projectile);
     }
 
-    void ArrowUpdate()
+    #region 인벤 함수
+    public List<Item> GetInven()
     {
-        if (Input.GetKeyDown(KeyCode.Z))
-            arrowSprite.DOColor(new Color(0.7f, 0.7f, 0.7f), 0.1f);
-        else if (Input.GetKeyUp(KeyCode.Z))
-            arrowSprite.DOColor(Color.white, 0.1f);
+        return new List<Item>(items);
     }
 
-    #region 몹 충돌
-    void Die()
+    public void AddItem(Item addItem)
+    {
+        Item item = items.Find((Item x) => x == addItem);
+        if (item == null)
+        {
+            item = addItem;
+            items.Add(item);
+            item.OnEquip();
+        }
+        else
+            item.OnUpgrade();
+        UIManager.Instance.UpdateItemInven(item);
+    }
+    #endregion
+
+    #region 화살표 함수
+    public Quaternion GetArrowRotation()
+    {
+        return arrowObj.transform.rotation;
+    }
+
+    protected void ArrowUpdate()
+    {
+        if (Input.GetKeyDown(KeyCode.Z))
+            arrowSprite.DOColor(arrowPressColor, arrowFadeTime);
+        else if (Input.GetKeyUp(KeyCode.Z))
+            arrowSprite.DOColor(arrowDefaultColor, arrowFadeTime);
+    }
+    #endregion
+
+    #region 몹 충돌 함수
+    protected void Die()
     {
 
     }
@@ -84,7 +148,7 @@ public class Player : Unit
             return;
         }
         stat.hp -= damage;
-        if(stat.hp <= 0)
+        if (stat.hp <= 0)
         {
             stat.hp = 0;
             Die();
@@ -96,51 +160,58 @@ public class Player : Unit
 
     protected override void OnTriggerEnter2D(Collider2D collider2D)
     {
-        if (collider2D != null && collider2D.CompareTag("Enemy"))
+        if (collider2D == null)
+            return;
+
+        if (collider2D.CompareTag("Enemy"))
             collisionEnemyList.Add(collider2D.GetComponent<Enemy>());
+        if (collider2D.CompareTag("Exp"))
+            collider2D.GetComponent<Exp>().OnGet();
     }
 
     protected override void OnTriggerExit2D(Collider2D collider2D)
     {
-        if (collider2D != null && collider2D.CompareTag("Enemy"))
+        if (collider2D == null)
+            return;
+
+        if (collider2D.CompareTag("Enemy"))
             collisionEnemyList.Remove(collider2D.GetComponent<Enemy>());
     }
 
-    void HitCheck()
+    protected void HitCheck()
     {
         if (hurtInv)
             return;
-        foreach(Enemy enemy in collisionEnemyList)
+        foreach (Enemy enemy in collisionEnemyList)
         {
             if (enemy.dying) return;
-
             if (Random.Range(0f, 100f) <= stat.evade)
             {
                 TakeDamage(0, true);
                 return;
             }
+            hurtInv = true;
 
             bool invAttack = false;
             foreach (Item item in items)
                 if (item.OnHit(enemy))
                     invAttack = true;
             TakeDamage(enemy.GetDamage(), invAttack);
-            hurtInv = true;
-            spriteRenderer.DOFade(0.8f, 0.1f).SetUpdate(true).OnComplete(() =>
-            spriteRenderer.DOFade(1, 0.1f).SetUpdate(true).OnComplete(() =>
-            hurtInv = false));
+
+            spriteRenderer.DOFade(hitFadeInAlpha, hitFadeTime).
+                OnComplete(() => spriteRenderer.DOFade(hitFadeOutAlpha, hitFadeTime).
+                OnComplete(() => hurtInv = false));
         }
     }
 
     #endregion
 
-    #region 이동
-    float speedX;
-    float speedY;
-    void Move(float deltaTime)
+    #region 이동 함수
+    protected void Move(float deltaTime)
     {
-        speedX = 0;
-        speedY = 0;
+        float speedX = 0;
+        float speedY = 0;
+
         if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
         {
             speedX = stat.speed;
@@ -167,7 +238,7 @@ public class Player : Unit
         else
         {
             animator.SetBool("isWalking", true);
-            animator.speed = stat.speed / 5;
+            animator.speed = stat.speed * animatorScaleSpeed;
             if (!Input.GetKey(KeyCode.Z))
             {
                 float rotationZ;
@@ -182,7 +253,7 @@ public class Player : Unit
                     if (speedY > 0) rotationZ = 315;
                 else if (speedY == 0) rotationZ = 0;
                 else rotationZ = 45;
-                arrowObj.transform.rotation = Quaternion.Lerp(arrowObj.transform.rotation, Quaternion.Euler(0, 0, rotationZ), Time.deltaTime * 20);
+                arrowObj.transform.rotation = Quaternion.Lerp(arrowObj.transform.rotation, Quaternion.Euler(0, 0, rotationZ), Time.deltaTime * arrowTurnSpeed);
             }
         }
         transform.Translate(speedX * deltaTime, speedY * deltaTime, speedY * deltaTime);

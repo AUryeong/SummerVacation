@@ -1,20 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PoolManager : MonoBehaviour
+public class PoolManager : Singleton<PoolManager>
 {
-    public static PoolManager Instance
-    {
-        get;
-        private set;
-    }
 
-    Dictionary<GameObject, List<GameObject>> pools = new Dictionary<GameObject, List<GameObject>>();
-
-    void Start()
-    {
-        Instance = this;
-    }
+    private Dictionary<GameObject, List<GameObject>> pools = new Dictionary<GameObject, List<GameObject>>();
 
     public void AddPooling(GameObject origin, Transform parent)
     {
@@ -26,7 +16,10 @@ public class PoolManager : MonoBehaviour
         {
             GameObject obj = parent.GetChild(i).gameObject;
             if (obj != origin)
+            {
                 pools[origin].Add(obj);
+                DontDestroyOnLoad(obj);
+            }
         }
     }
     public GameObject Init(GameObject origin)
@@ -48,6 +41,7 @@ public class PoolManager : MonoBehaviour
                 pools.Add(origin, new List<GameObject>());
             }
             copy = Instantiate(origin);
+            DontDestroyOnLoad(copy);
             pools[origin].Add(copy);
             copy.SetActive(true);
             return copy;
@@ -56,5 +50,12 @@ public class PoolManager : MonoBehaviour
         {
             return null;
         }
+    }
+
+    public override void OnReset()
+    {
+        foreach(List<GameObject> objs in pools.Values)
+            foreach(var obj in objs)
+                obj.gameObject.SetActive(false);
     }
 }
