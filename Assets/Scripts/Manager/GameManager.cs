@@ -9,6 +9,12 @@ public class GameManager : Singleton<GameManager>
 {
     [HideInInspector] public List<Enemy> inCameraEnemies = new List<Enemy>();
     private Vector3 cameraDistance = new Vector3(0, 0, 100);
+    public bool isGaming
+    {
+        get;
+        private set;
+    }
+
 
     #region ¸÷ °ü·Ã º¯¼ö
     [SerializeField] private Enemy enemyBase;
@@ -38,12 +44,14 @@ public class GameManager : Singleton<GameManager>
     private float moveXPos = 0.7f;
     private float moveYPos = 1f;
     #endregion
+
     public override void OnReset()
     {
-        ResourcesManager.Instance.ReadResource();
-        UIManager.Instance.OnReset();
         ResourcesManager.Instance.OnReset();
+        UIManager.Instance.OnReset();
         PoolManager.Instance.OnReset();
+
+        isGaming = true;
     }
 
     public void OnKill(Enemy enemy)
@@ -62,6 +70,8 @@ public class GameManager : Singleton<GameManager>
 
     private void Update()
     {
+        if (!isGaming)
+            return;
         Camera.main.transform.position = Player.Instance.transform.position - cameraDistance;
         EnemyCreate();
     }
@@ -113,7 +123,7 @@ public class GameManager : Singleton<GameManager>
             chooseItems.Add(addItem);
             itemList.Remove(addItem);
         }
-        
+
 
         UIManager.Instance.StartChooseItem(chooseItems);
     }
@@ -152,7 +162,7 @@ public class GameManager : Singleton<GameManager>
         damageTextObj.transform.DOMoveY(damageTextObj.transform.position.y + moveYPos, fadeInTime + fadeOutTime).SetEase(Ease.OutBack).
             OnComplete(() => damageTextObj.SetActive(false));
     }
-    public void ShowDamage(int damage, Vector3 pos, Color color)
+    public void ShowInt(int damage, Vector3 pos, Color color)
     {
         ShowText(damage.ToString(), pos, color);
     }

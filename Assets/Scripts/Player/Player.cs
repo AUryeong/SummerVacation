@@ -6,6 +6,9 @@ using DG.Tweening;
 public class Player : Unit
 {
     public static Player Instance;
+
+    //캐릭터 기본 스텟, 일반 stat은 퍼센트로 표현
+    public Stat defaultStat;
     private List<Item> items = new List<Item>();
 
     #region 레벨 변수
@@ -51,9 +54,12 @@ public class Player : Unit
     protected bool hurtInv = false;
 
     Color hitTextColor = new Color(255 / 255f, 66 / 255f, 66 / 255f);
+    Color healTextColor = new Color(101 / 255f, 255 / 255f, 76 / 255f);
     float hitFadeInAlpha = 0.8f;
     float hitFadeOutAlpha = 1f;
     float hitFadeTime = 0.1f;
+
+    float damageRandomPercent = 10;
 
     [SerializeField]
     SpriteRenderer hpBarSprite;
@@ -139,6 +145,28 @@ public class Player : Unit
     {
 
     }
+    public override float GetDamage()
+    {
+        float damage = stat.damage / 100 * defaultStat.damage;
+        damage += Random.Range(damage / -damageRandomPercent, damage / damageRandomPercent);
+        if (Random.Range(0f, 100f) <= stat.crit)
+        {
+            damage *=  stat.critDmg / 100;
+        }
+        return damage;
+    }
+
+    public void TakeHeal(float healAmount, bool isSkipText = false)
+    {
+        stat.hp += healAmount;
+        if(stat.hp > stat.maxHp)
+        {
+            stat.hp = stat.maxHp;
+        }
+        hpBarSprite.size = new Vector2(stat.hp / (stat.maxHp / 100 * defaultStat.maxHp), 1);
+        if (!isSkipText)
+            GameManager.Instance.ShowInt((int)healAmount, transform.position, healTextColor);
+    }
     public void TakeDamage(float damage, bool invAttack = false, bool isSkipText = false)
     {
         if (invAttack || inv)
@@ -153,9 +181,9 @@ public class Player : Unit
             stat.hp = 0;
             Die();
         }
-        hpBarSprite.size = new Vector2(stat.hp / stat.maxHp, 1);
+        hpBarSprite.size = new Vector2(stat.hp / (stat.maxHp / 100 * defaultStat.maxHp), 1);
         if (!isSkipText)
-            GameManager.Instance.ShowDamage((int)damage, transform.position, hitTextColor);
+            GameManager.Instance.ShowInt((int)damage, transform.position, hitTextColor);
     }
 
     protected override void OnTriggerEnter2D(Collider2D collider2D)
@@ -214,21 +242,21 @@ public class Player : Unit
 
         if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
         {
-            speedX = stat.speed;
+            speedX = stat.speed / 100 * defaultStat.speed;
             spriteRenderer.flipX = true;
         }
         if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
         {
-            speedX -= stat.speed;
+            speedX -= stat.speed / 100 * defaultStat.speed;
             spriteRenderer.flipX = false;
         }
         if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
         {
-            speedY = stat.speed;
+            speedY = stat.speed / 100 * defaultStat.speed;
         }
         if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
         {
-            speedY -= stat.speed;
+            speedY -= stat.speed / 100 * defaultStat.speed;
         }
         if (speedX == 0 && speedY == 0)
         {
@@ -238,7 +266,7 @@ public class Player : Unit
         else
         {
             animator.SetBool("isWalking", true);
-            animator.speed = stat.speed * animatorScaleSpeed;
+            animator.speed = stat.speed / 100 * defaultStat.speed * animatorScaleSpeed;
             if (!Input.GetKey(KeyCode.Z))
             {
                 float rotationZ;

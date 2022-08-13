@@ -5,12 +5,15 @@ using UnityEngine;
 public class ResourcesManager : Singleton<ResourcesManager>
 {
 
+    private bool isWritingResources = false;
     private Dictionary<string, GameObject> projectiles = new Dictionary<string, GameObject>();
     private Dictionary<string, Sprite> itemIcons = new Dictionary<string, Sprite>();
     public Dictionary<string, Item> items = new Dictionary<string, Item>();
 
     public override void OnReset()
     {
+        if(!isWritingResources)
+            ReadResource();
     }
 
     public void ReadResource()
@@ -22,6 +25,8 @@ public class ResourcesManager : Singleton<ResourcesManager>
             itemIcons.Add(icon.name, icon);
 
         ReadItem();
+
+        isWritingResources = true;
     }
 
     private void ReadItem()
@@ -29,6 +34,8 @@ public class ResourcesManager : Singleton<ResourcesManager>
         foreach (string line in Resources.Load<TextAsset>("Item/ItemList").text.Split('\n'))
         {
             string[] texts = line.Split(',');
+            if (texts[0] == "코드 아이템 이름")
+                continue;
             Item item = System.Activator.CreateInstance(System.Type.GetType("Item_" + texts[0])) as Item;
             int upgradeMaxCount = int.Parse(texts[2]);
             string[] lore = new string[upgradeMaxCount+1];

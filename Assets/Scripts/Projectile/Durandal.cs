@@ -25,21 +25,10 @@ public class Durandal : Projectile
 
     public override void OnKill()
     {
-        if(item.upgrade >= 8)
-        isKillingEnemy = true;
+        if (item.upgrade >= 8)
+            isKillingEnemy = true;
     }
-    public override float GetDamage(float damage)
-    {
-        float damageMultipler = 2;
-        if (item.upgrade >= 2)
-        {
-            damageMultipler *= 1.2f;
-            if (item.upgrade >= 5)
-                damageMultipler *= 1.4f;
-        }
-        return damage * damageMultipler;
-    }
-    public void OnCreate(Vector3 wantPos)
+    public void OnCreate(Vector3 wantPos, Vector3 size)
     {
         isHitable = true;
         isKillingEnemy = false;
@@ -50,15 +39,7 @@ public class Durandal : Projectile
         wantPos = new Vector3(wantPos.x, wantPos.y, wantPos.y - spriteRenderer.size.y);
         transform.position = wantPos + increaseHeight;
 
-        Vector3 size = Vector3.one;
-        if(item.upgrade >= 4)
-        {
-            size *= 1.15f;
-            if (item.upgrade >= 7)
-                size *= 1.3f;
-        }
         transform.localScale = size;
-
         transform.DOMove(wantPos, downDuration).SetEase(Ease.InQuint).
             OnComplete(() => StartCoroutine(OnDownCoroutine()));
     }

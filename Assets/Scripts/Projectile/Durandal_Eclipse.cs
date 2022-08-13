@@ -5,11 +5,14 @@ using DG.Tweening;
 
 public class Durandal_Eclipse : Projectile
 {
-    float downDuration = 0.25f;
+    SpriteRenderer spriteRenderer;
+
+    float downDuration = 0.35f;
     float downWaitDuration = 1;
     float downFadeOutDuration = 1;
     Vector3 increaseHeight = new Vector3(10, 10, -10);
-    SpriteRenderer spriteRenderer;
+
+    float damagePercent = 0.5f;
 
     [SerializeField]
     Sprite downSprite;
@@ -21,8 +24,7 @@ public class Durandal_Eclipse : Projectile
     }
     public override float GetDamage(float damage)
     {
-        float damageMultipler = 3.36f;
-        return damage * damageMultipler;
+        return base.GetDamage(damage) * damagePercent;
     }
     public void OnCreate(Vector3 wantPos)
     {

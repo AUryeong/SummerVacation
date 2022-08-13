@@ -73,7 +73,7 @@ public class Enemy : Unit
 
         float damage = projectile.GetDamage(Player.Instance.GetDamage());
         stat.hp -= damage;
-        GameManager.Instance.ShowDamage((int)damage, transform.position, Color.white);
+        GameManager.Instance.ShowInt((int)damage, transform.position, Color.white);
         enemyFlashWhiteCo = StartCoroutine(HitFlashWhite());
         if (stat.hp > 0)
         {

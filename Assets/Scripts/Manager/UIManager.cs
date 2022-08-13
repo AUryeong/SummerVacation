@@ -7,6 +7,21 @@ using DG.Tweening;
 
 public class UIManager : Singleton<UIManager>
 {
+
+    #region 무기 인벤토리 변수
+    [SerializeField] GridLayoutGroup inventoryLayoutGroup;
+    protected RectTransform inventoryRectTransform;
+
+    [SerializeField] ItemInven itemInventoryImage;
+    protected List<ItemInven> itemInventories = new List<ItemInven>();
+
+    private float itemInventoryFadeInPosX = -160f;
+    private float itemInventoryFadeOutPosX = -56f;
+    private float itemInventoryFadeDuration = 0.3f;
+
+    private bool inventoryOpen = true;
+    #endregion
+
     #region 무기 획득 변수
     [SerializeField] GameObject levelUpUI;
     [SerializeField] TMP_Text levelUpText;
@@ -15,10 +30,6 @@ public class UIManager : Singleton<UIManager>
     [SerializeField] ItemSlot[] itemSlots;
 
     [SerializeField] ParticleSystem itemSlotParticle;
-
-    [SerializeField] GridLayoutGroup inventoryLayoutGroup;
-    [SerializeField] ItemInven itemInventoryImage;
-    protected List<ItemInven> itemInventories = new List<ItemInven>();
 
     public Sprite deselectSlotSprite;
     public Sprite selectSlotSprite;
@@ -37,6 +48,11 @@ public class UIManager : Singleton<UIManager>
     private float levelUpTextSinAdder = 0.5f;
     #endregion
 
+    #region 타이머 변수
+    [SerializeField] TextMeshProUGUI timerText;
+    private float timer;
+    #endregion
+
     #region 레벨 변수
     [SerializeField] private Image lvBarImage;
     [SerializeField] private TextMeshProUGUI lvBarText;
@@ -46,20 +62,72 @@ public class UIManager : Singleton<UIManager>
     {
         levelUpUI.gameObject.SetActive(false);
         itemSlotActiviting = false;
+
+        inventoryOpen = true;
         itemInventories.Clear();
+        inventoryRectTransform = inventoryLayoutGroup.GetComponent<RectTransform>();
+
+        inventoryRectTransform.DOAnchorPosX(itemInventoryFadeOutPosX, itemInventoryFadeDuration);
+        inventoryRectTransform.DOScaleX(1, itemInventoryFadeDuration);
+
+        timer = 0;
+
+        UpdateLevel();
     }
 
     private void Update()
     {
+        if (!GameManager.Instance.isGaming)
+            return;
+        CheckInventoryUI();
         if (levelUpUI.gameObject.activeSelf)
             UpdateLevelUpUI();
+        UpdateTimer();
     }
 
     public bool IsActable()
     {
-        return !levelUpUI.gameObject.activeSelf && Time.timeScale != 0;
-        
+        return !levelUpUI.gameObject.activeSelf && Time.timeScale != 0 && GameManager.Instance.isGaming;
     }
+
+    #region 무기 인벤토리 함수
+    private void CheckInventoryUI()
+    {
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            if (inventoryOpen)
+            {
+                inventoryRectTransform.DOAnchorPosX(itemInventoryFadeInPosX, itemInventoryFadeDuration);
+                inventoryRectTransform.DOScaleX(0, itemInventoryFadeDuration);
+            }
+            else
+            {
+                inventoryRectTransform.DOAnchorPosX(itemInventoryFadeOutPosX, itemInventoryFadeDuration);
+                inventoryRectTransform.DOScaleX(1, itemInventoryFadeDuration);
+            }
+            inventoryOpen = !inventoryOpen;
+        }
+    }
+
+    public void UpdateItemInven(Item item)
+    {
+        ItemInven itemInventory = itemInventories.Find((ItemInven x) => x.gameObject.activeSelf && x.item == item);
+        if (itemInventory == null)
+        {
+            itemInventory = PoolManager.Instance.Init(itemInventoryImage.gameObject).GetComponent<ItemInven>();
+            itemInventory.rectTransform.SetParent(itemInventoryImage.rectTransform.parent);
+            itemInventory.rectTransform.anchoredPosition3D = Vector3.zero;
+            itemInventory.rectTransform.localScale = Vector3.one;
+            itemInventories.Add(itemInventory);
+        }
+        int itemInventoryCount = itemInventories.FindAll((ItemInven x) => x.gameObject.activeSelf).Count;
+        if (itemInventoryCount <= 3)
+        {
+            inventoryLayoutGroup.constraintCount = itemInventoryCount;
+        }
+        itemInventory.item = item;
+    }
+    #endregion
 
     #region 무기 획득 함수
 
@@ -163,31 +231,22 @@ public class UIManager : Singleton<UIManager>
                 Time.timeScale = 1;
             });
     }
-
-    public void UpdateItemInven(Item item)
-    {
-        ItemInven itemInventory = itemInventories.Find((ItemInven x) => x.gameObject.activeSelf && x.item == item);
-        if (itemInventory == null)
-        {
-            itemInventory = PoolManager.Instance.Init(itemInventoryImage.gameObject).GetComponent<ItemInven>();
-            itemInventory.rectTransform.SetParent(itemInventoryImage.rectTransform.parent);
-            itemInventory.rectTransform.anchoredPosition3D = Vector3.zero;
-            itemInventory.rectTransform.localScale = Vector3.one;
-            itemInventories.Add(itemInventory);
-        }
-        int itemInventoryCount = itemInventories.FindAll((ItemInven x) => x.gameObject.activeSelf).Count;
-        if (itemInventoryCount <= 3)
-        {
-            inventoryLayoutGroup.constraintCount = itemInventoryCount;
-        }
-        itemInventory.item = item;
-    }
-    
     #endregion
 
+    #region 타이머 함수
+    private void UpdateTimer()
+    {
+        timer += Time.deltaTime;
+        int timerInt = (int)timer;
+        timerText.text = (timerInt / 60).ToString("D2") + " : " + (timerInt % 60).ToString("D2");
+    }
+    #endregion
+
+    #region 레벨 함수
     public void UpdateLevel()
     {
         lvBarImage.DOFillAmount(Player.Instance.Exp / Player.Instance.maxExp, 0.3f).SetUpdate(true);
         lvBarText.text = "LV: " + Player.Instance.lv;
     }
+    #endregion
 }

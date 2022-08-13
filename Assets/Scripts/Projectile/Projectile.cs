@@ -13,7 +13,7 @@ public class Projectile : MonoBehaviour
 
     public virtual float GetDamage(float damage)
     {
-        return damage;
+        return item.GetDamage(damage);
     }
 
     public virtual void OnKill()

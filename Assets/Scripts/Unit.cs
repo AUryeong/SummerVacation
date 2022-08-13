@@ -29,7 +29,7 @@ public class Unit : MonoBehaviour
     protected virtual void OnTriggerExit2D(Collider2D collider2D)
     {
     }
-    public float GetDamage()
+    public virtual float GetDamage()
     {
         float damage = stat.damage;
         damage += Random.Range(stat.damage / -10f, stat.damage / 10f);
