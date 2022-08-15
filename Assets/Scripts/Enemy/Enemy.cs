@@ -13,10 +13,12 @@ public class Enemy : Unit
     protected Direction direction;
     protected SpriteRenderer spriteRenderer;
     private Coroutine enemyFlashWhiteCo;
+    private Material originalMaterial;
 
     protected virtual void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+        originalMaterial = spriteRenderer.material;
     }
     protected virtual void OnEnable()
     {
@@ -61,30 +63,44 @@ public class Enemy : Unit
 
     protected virtual void OnHurt(Projectile projectile)
     {
-        if (!projectile.isHitable)
-            return;
+        if (dying) return;
+        if (!projectile.isHitable) return;
+
         projectile.OnHit(this);
 
-        if (Random.Range(0f, 100f) <= stat.evade)
-        {
-            GameManager.Instance.ShowText("MISS", transform.position, Color.white);
-            return;
-        }
+        OnHurt(projectile.GetDamage(Player.Instance.GetDamage()));
 
-        float damage = projectile.GetDamage(Player.Instance.GetDamage());
+        if (dying)
+            projectile.OnKill();
+    }
+    public virtual void OnHurt(float damage, bool isCanEvade = true, bool isSkipText = false)
+    {
+        if (dying) return;
+
+        if (isCanEvade)
+            if (Random.Range(0f, 100f) <= stat.evade)
+            {
+                if (!isSkipText)
+                    GameManager.Instance.ShowText("MISS", transform.position, Color.white);
+                return;
+            }
+        if (!isSkipText)
+            GameManager.Instance.ShowInt((int)damage, transform.position, Color.white);
+
         stat.hp -= damage;
-        GameManager.Instance.ShowInt((int)damage, transform.position, Color.white);
+        if (enemyFlashWhiteCo != null)
+            StopCoroutine(enemyFlashWhiteCo);
         enemyFlashWhiteCo = StartCoroutine(HitFlashWhite());
+
         if (stat.hp > 0)
-        {
             return;
-        }
 
         dying = true;
-        projectile.OnKill();
-        Player.Instance.OnKill(projectile);
         GameManager.Instance.OnKill(this);
+        Player.Instance.OnKill(this);
+
         transform.DOMoveX(transform.position.x + ((direction == Direction.Left) ? 1 : -1), 0.5f);
+
         spriteRenderer.DOFade(0, 0.5f).
             OnComplete(() => gameObject.SetActive(false));
         spriteRenderer.DOColor(new Color(1, 0.7f, 0.7f), 0.1f).SetEase(Ease.InQuart);
@@ -104,9 +120,8 @@ public class Enemy : Unit
 
     protected IEnumerator HitFlashWhite()
     {
-        Material original = spriteRenderer.material;
         spriteRenderer.material = GameManager.Instance.flashWhiteMaterial;
         yield return new WaitForSeconds(0.2f);
-        spriteRenderer.material = original;
+        spriteRenderer.material = originalMaterial;
     }
 }

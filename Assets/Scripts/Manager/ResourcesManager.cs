@@ -12,7 +12,7 @@ public class ResourcesManager : Singleton<ResourcesManager>
 
     public override void OnReset()
     {
-        if(!isWritingResources)
+        if (!isWritingResources)
             ReadResource();
     }
 
@@ -34,19 +34,33 @@ public class ResourcesManager : Singleton<ResourcesManager>
         foreach (string line in Resources.Load<TextAsset>("Item/ItemList").text.Split('\n'))
         {
             string[] texts = line.Split(',');
-            if (texts[0] == "코드 아이템 이름")
+
+            string codeItemName = texts[0];
+            string itemName = texts[1];
+
+            // csv 제작과정에서 예외 처리
+            if (string.IsNullOrWhiteSpace(codeItemName) || codeItemName == "코드 아이템 이름")
                 continue;
-            Item item = System.Activator.CreateInstance(System.Type.GetType("Item_" + texts[0])) as Item;
-            int upgradeMaxCount = int.Parse(texts[2]);
-            string[] lore = new string[upgradeMaxCount+1];
-            for (int i = 0; i <= upgradeMaxCount; i++)
+
+            // 아이템 생성
+            Item item = System.Activator.CreateInstance(System.Type.GetType("Item_" + codeItemName)) as Item;
+
+            List<string> lore = new List<string>();
+            // 2를 뺀 이유는 앞 2칸은 코드 아이템 이름, 아이템 이름이기 때문
+            for (int i = 0; i < texts.Length - 2; i++)
             {
-                if (string.IsNullOrEmpty(texts[i + 3]))
+                // 이후 업그레이드가 없는 것에 대한 예외 처리
+                if (string.IsNullOrWhiteSpace(texts[i + 2]))
                     break;
-                lore[i] = texts[i + 3];
+                lore.Add(texts[i + 2]);
             }
-            item.Init(texts[1], lore, upgradeMaxCount, GetItemIcon(texts[0]));
-            items.Add(texts[0], item);
+            
+            item.Init(itemName, // 아이템 이름
+                lore.ToArray(), // 아이템 설명들
+                lore.Count - 1, // 최대 업그레이드 횟수 ( 기본은 제외하니까 - 1 )
+                GetItemIcon(codeItemName)); // 아이템 아이콘
+
+             items.Add(codeItemName, item);
         }
     }
 

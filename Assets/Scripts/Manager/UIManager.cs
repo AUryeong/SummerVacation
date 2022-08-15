@@ -97,13 +97,13 @@ public class UIManager : Singleton<UIManager>
         {
             if (inventoryOpen)
             {
-                inventoryRectTransform.DOAnchorPosX(itemInventoryFadeInPosX, itemInventoryFadeDuration);
-                inventoryRectTransform.DOScaleX(0, itemInventoryFadeDuration);
+                inventoryRectTransform.DOAnchorPosX(itemInventoryFadeInPosX, itemInventoryFadeDuration).SetUpdate(true);
+                inventoryRectTransform.DOScaleX(0, itemInventoryFadeDuration).SetUpdate(true);
             }
             else
             {
-                inventoryRectTransform.DOAnchorPosX(itemInventoryFadeOutPosX, itemInventoryFadeDuration);
-                inventoryRectTransform.DOScaleX(1, itemInventoryFadeDuration);
+                inventoryRectTransform.DOAnchorPosX(itemInventoryFadeOutPosX, itemInventoryFadeDuration).SetUpdate(true);
+                inventoryRectTransform.DOScaleX(1, itemInventoryFadeDuration).SetUpdate(true);
             }
             inventoryOpen = !inventoryOpen;
         }

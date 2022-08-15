@@ -96,7 +96,7 @@ GameObject:
   - component: {fileID: 8380869616295677995}
   - component: {fileID: 8380869616295677992}
   - component: {fileID: 8380869616295677994}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Enemy_GyungHun
   m_TagString: Enemy
   m_Icon: {fileID: 0}

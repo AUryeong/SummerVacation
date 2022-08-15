@@ -98,10 +98,10 @@ public class Player : Unit
     }
 
 
-    public void OnKill(Projectile projectile)
+    public void OnKill(Enemy enemy)
     {
         foreach (Item item in items)
-            item.OnKill(projectile);
+            item.OnKill(enemy);
     }
 
     #region 인벤 함수

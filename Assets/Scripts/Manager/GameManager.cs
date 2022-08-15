@@ -15,7 +15,6 @@ public class GameManager : Singleton<GameManager>
         private set;
     }
 
-
     #region ¸÷ °ü·Ã º¯¼ö
     [SerializeField] private Enemy enemyBase;
     public ParticleSystem enemyKillEffect;

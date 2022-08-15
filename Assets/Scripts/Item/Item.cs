@@ -65,7 +65,7 @@ public class Item
         upgrade++;
     }
 
-    public virtual void OnKill(Projectile lastAttack)
+    public virtual void OnKill(Enemy killEnemy)
     {
     }
 
@@ -85,28 +85,28 @@ public class Item
 public class Item_Durandal : Item
 {
     private float duration;
-    private float randomDistance = 4;
+    readonly private float randomDistance = 4;
 
 
-    private float defaultDamagePercent = 2;
+    readonly private float defaultDamagePercent = 2;
     private float damagePercent;
     //업그레이드
-    private float twoDamagePercent = 1.2f;
-    private float fiveDamagePercent = 1.4f;
+    readonly private float twoDamagePercent = 1.2f;
+    readonly private float fiveDamagePercent = 1.4f;
 
 
-    private float defaultCooltime = 3;
+    readonly private float defaultCooltime = 3;
     private float cooltime;
     //업그레이드
-    private float threeCooltimePercent = 0.8f;
-    private float sixCooltimePercent = 0.7f;
+    readonly private float threeCooltimePercent = 0.8f;
+    readonly private float sixCooltimePercent = 0.7f;
 
 
     private Vector3 defaultSize = Vector3.one;
     private Vector3 size;
     //업그레이드
-    private float fourSizePercent = 1.15f;
-    private float sevenSizePercent = 1.3f;
+    readonly private float fourSizePercent = 1.15f;
+    readonly private float sevenSizePercent = 1.3f;
 
     public override void OnReset()
     {
@@ -200,12 +200,12 @@ public class Item_Godbless : Item
 
 
     float cooltime;
-    float defaultCooltime = 60;
+    readonly float defaultCooltime = 60;
     //업그레이드
-    float upgradeCooltimePercent = 0.9f;
+    readonly float upgradeCooltimePercent = 0.9f;
 
 
-    float upgradeDamageAdder = 5;
+    readonly float upgradeDamageAdder = 5;
 
     public override bool CanGet()
     {
@@ -252,13 +252,129 @@ public class Item_Godbless : Item
 //데이 브레이크
 public class Item_Daybreak : Item
 {
+
+    readonly float critPercentDecrease = 30;
+    readonly float damagePercentIncrease = 30;
+
+    //업그레이드
+    readonly float twoDamagePercentIncrease = 10;
+    readonly float threeDamagePercentIncrease = 15;
+    readonly float fourDamagePercentIncrease = 20;
     public override bool CanGet()
     {
         return base.CanGet() && Player.Instance is Player_KimMinSu;
+    }
+
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        Player.Instance.stat.crit -= critPercentDecrease;
+        Player.Instance.stat.damage += damagePercentIncrease;
+    }
+
+    public override void OnUpgrade()
+    {
+        base.OnUpgrade();
+        switch (upgrade)
+        {
+            case 2:
+                Player.Instance.stat.damage += twoDamagePercentIncrease;
+                break;
+            case 3:
+                Player.Instance.stat.damage += threeDamagePercentIncrease;
+                break;
+            case 4:
+                Player.Instance.stat.damage += fourDamagePercentIncrease;
+                break;
+        }
     }
 }
 
 //폭주하는 날개
 public class Item_KiaraR : Item
 {
+    float duration = 0;
+    float cooltime = 0.3f;
+
+    readonly float defaultDamagePercent = 0.4f;
+    float damagePercecnt;
+    //업그레이드
+    readonly float threeDamagePercent = 1.3f;
+
+
+    readonly Vector3 defaultsize = Vector3.one;
+    Vector3 size;
+    readonly float overlapMultipler = 1.5125f;
+    //업그레이드
+    readonly float twoSizePercent = 1.15f;
+    readonly float fourSizePercent = 1.25f;
+    readonly float fiveSizePercent = 1.5f;
+
+
+    GameObject auraObj;
+    public override void OnEquip()
+    {
+        base.OnEquip();
+        auraObj = ResourcesManager.Instance.GetProjectile("KiaraR");
+        auraObj.transform.localScale = size;
+        auraObj.GetComponent<Projectile>().isHitable = false;
+    }
+
+    public override float GetDamage(float damage)
+    {
+        return damage * damagePercecnt;
+    }
+
+    public override void OnReset()
+    {
+        base.OnReset();
+        if(auraObj != null)
+        {
+            auraObj.gameObject.SetActive(false);
+            auraObj = null;
+        }
+        damagePercecnt = defaultDamagePercent;
+        size = defaultsize;
+    }
+
+    public override void OnUpgrade()
+    {
+        base.OnUpgrade();
+        switch (upgrade)
+        {
+            case 2:
+                size *= twoSizePercent;
+                break;
+            case 3:
+                damagePercecnt *= threeDamagePercent;
+                break;
+            case 4:
+                size *= fourSizePercent;
+                break;
+            case 5:
+                size *= fiveSizePercent;
+                break;
+        }
+        auraObj.transform.localScale = size;
+    }
+
+    public override void OnUpdate(float deltaTime)
+    {
+        base.OnUpdate(deltaTime);
+        if (auraObj != null)
+            auraObj.transform.position = Player.Instance.transform.position;
+
+        duration += deltaTime;
+        if(duration < cooltime)
+            return;
+        duration -= cooltime;
+
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(Player.Instance.transform.position, size.x * overlapMultipler, LayerMask.GetMask("Enemy"));
+        if(colliders != null && colliders.Length > 0)
+        {
+            float damage = GetDamage(Player.Instance.GetDamage());
+            foreach (Collider2D collider2D in colliders)
+                collider2D.GetComponent<Enemy>().OnHurt(damage);
+        }
+    }
 }
