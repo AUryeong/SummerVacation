@@ -39,8 +39,7 @@ public class ResourcesManager : Singleton<ResourcesManager>
             string itemName = texts[1];
 
             // csv 제작과정에서 예외 처리
-            if (string.IsNullOrWhiteSpace(codeItemName) || codeItemName == "코드 아이템 이름")
-                continue;
+            if (string.IsNullOrWhiteSpace(codeItemName) || codeItemName == "코드 아이템 이름") continue;
 
             // 아이템 생성
             Item item = System.Activator.CreateInstance(System.Type.GetType("Item_" + codeItemName)) as Item;
@@ -50,17 +49,13 @@ public class ResourcesManager : Singleton<ResourcesManager>
             for (int i = 0; i < texts.Length - 2; i++)
             {
                 // 이후 업그레이드가 없는 것에 대한 예외 처리
-                if (string.IsNullOrWhiteSpace(texts[i + 2]))
-                    break;
+                if (string.IsNullOrWhiteSpace(texts[i + 2])) break;
                 lore.Add(texts[i + 2]);
             }
-            
-            item.Init(itemName, // 아이템 이름
-                lore.ToArray(), // 아이템 설명들
-                lore.Count - 1, // 최대 업그레이드 횟수 ( 기본은 제외하니까 - 1 )
-                GetItemIcon(codeItemName)); // 아이템 아이콘
 
-             items.Add(codeItemName, item);
+            item.Init(itemName, lore.ToArray(), lore.Count - 1, GetItemIcon(codeItemName));
+
+            items.Add(codeItemName, item);
         }
     }
 

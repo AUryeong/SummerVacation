@@ -21,6 +21,13 @@ public class Item
         get;
         protected set;
     }
+    /// <summary>
+    /// 아이템 생성시 발동
+    /// </summary>
+    /// <param name="name">아이템 이름</param>
+    /// <param name="lore">아이템 설명들</param>
+    /// <param name="maxUpgrade">최대 업그레이드 횟수</param>
+    /// <param name="icon">아이템 아이콘</param>
     public void Init(string name, string[] lore, int maxUpgrade, Sprite icon)
     {
         this.name = name;
@@ -157,7 +164,7 @@ public class Item_Durandal : Item
         // 쌍검이여서 두번 소환
         for (int i = 0; i < 2; i++)
         {
-            GameObject projectile = ResourcesManager.Instance.GetProjectile("Durandal_Eclipse");
+            GameObject projectile = ResourcesManager.Instance.GetProjectile(nameof(Durandal_Eclipse));
             Durandal_Eclipse durandal = projectile.GetComponent<Durandal_Eclipse>();
 
             durandal.item = this;
@@ -179,7 +186,7 @@ public class Item_Durandal : Item
         }
         duration -= cooltime;
 
-        GameObject projectile = ResourcesManager.Instance.GetProjectile("Durandal");
+        GameObject projectile = ResourcesManager.Instance.GetProjectile(nameof(Durandal));
         Durandal durandal = projectile.GetComponent<Durandal>();
         durandal.item = this;
 
@@ -369,7 +376,7 @@ public class Item_KiaraR : Item
             return;
         duration -= cooltime;
 
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(Player.Instance.transform.position, size.x * overlapMultipler, LayerMask.GetMask("Enemy"));
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(Player.Instance.transform.position, size.x * overlapMultipler, LayerMask.GetMask(nameof(Enemy)));
         if(colliders != null && colliders.Length > 0)
         {
             float damage = GetDamage(Player.Instance.GetDamage());
