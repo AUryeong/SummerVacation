@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Item
@@ -165,15 +166,16 @@ public class Item_Durandal : Item
         for (int i = 0; i < 2; i++)
         {
             GameObject projectile = ResourcesManager.Instance.GetProjectile(nameof(Durandal_Eclipse));
-            Durandal_Eclipse durandal = projectile.GetComponent<Durandal_Eclipse>();
+            Durandal_Eclipse durandalEclipse = projectile.GetComponent<Durandal_Eclipse>();
 
-            durandal.item = this;
+            durandalEclipse.item = this;
+            Vector3 pos;
             if (GameManager.Instance.inCameraEnemies.Count > 0)
-                durandal.OnCreate(RandomManager.SelectOne(GameManager.Instance.inCameraEnemies).transform.position + Random.onUnitSphere);
+                pos = RandomManager.SelectOne(GameManager.Instance.inCameraEnemies).transform.position + Random.onUnitSphere;
             else
-                durandal.OnCreate(Player.Instance.transform.position + Random.onUnitSphere * randomDistance);
+                pos = Player.Instance.transform.position + Random.onUnitSphere * randomDistance;
 
-            projectile.gameObject.SetActive(true);
+            durandalEclipse.OnCreate(pos);
         }
     }
 
@@ -311,6 +313,8 @@ public class Item_KiaraR : Item
 
     readonly Vector3 defaultsize = Vector3.one;
     Vector3 size;
+
+
     readonly float overlapMultipler = 1.5125f;
     //업그레이드
     readonly float twoSizePercent = 1.15f;

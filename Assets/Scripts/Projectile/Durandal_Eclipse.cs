@@ -28,7 +28,7 @@ public class Durandal_Eclipse : Projectile
     }
     public void OnCreate(Vector3 wantPos)
     {
-        isHitable = true;
+        isHitable = false;
         spriteRenderer.sprite = defaultSprite;
         spriteRenderer.color = Color.white;
 
@@ -40,8 +40,13 @@ public class Durandal_Eclipse : Projectile
     }
     IEnumerator OnDownCoroutine()
     {
-        isHitable = false;
+        Collider2D[] enemies = Physics2D.OverlapCircleAll(transform.position, spriteRenderer.bounds.size.x / 2, LayerMask.GetMask(nameof(Enemy)));
+        if (enemies != null && enemies.Length > 0)
+            foreach (Collider2D collider2D in enemies)
+                collider2D.GetComponent<Enemy>().OnHurt(this, true);
+
         spriteRenderer.sprite = downSprite;
+
         yield return new WaitForSeconds(downWaitDuration);
 
         spriteRenderer.DOFade(0, downFadeOutDuration).SetEase(Ease.InQuint).

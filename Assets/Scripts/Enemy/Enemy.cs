@@ -61,10 +61,10 @@ public class Enemy : Unit
             GameManager.Instance.inCameraEnemies.Remove(this);
     }
 
-    protected virtual void OnHurt(Projectile projectile)
+    public virtual void OnHurt(Projectile projectile, bool isSkipHitable = false)
     {
         if (dying) return;
-        if (!projectile.isHitable) return;
+        if (!isSkipHitable && !projectile.isHitable) return;
 
         projectile.OnHit(this);
 

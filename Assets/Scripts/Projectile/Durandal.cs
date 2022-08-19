@@ -30,9 +30,8 @@ public class Durandal : Projectile
     }
     public void OnCreate(Vector3 wantPos, Vector3 size)
     {
-        isHitable = true;
+        isHitable = false;
         isKillingEnemy = false;
-
         spriteRenderer.sprite = defaultSprite;
         spriteRenderer.color = Color.white;
 
@@ -45,14 +44,17 @@ public class Durandal : Projectile
     }
     IEnumerator OnDownCoroutine()
     {
-        isHitable = false;
+        Collider2D[] enemies = Physics2D.OverlapCircleAll(transform.position, spriteRenderer.bounds.size.x / 2, LayerMask.GetMask(nameof(Enemy)));
+        if (enemies != null && enemies.Length > 0)
+            foreach (Collider2D collider2D in enemies)
+                collider2D.GetComponent<Enemy>().OnHurt(this, true);
+
         spriteRenderer.sprite = downSprite;
 
         if (isKillingEnemy)
             (item as Item_Durandal).CreateDurandalEclipse();
         else
             yield return new WaitForSeconds(downWaitDuration);
-
 
         spriteRenderer.DOFade(0, downFadeOutDuration).SetEase(Ease.InQuint).
             OnComplete(() => gameObject.SetActive(false));
