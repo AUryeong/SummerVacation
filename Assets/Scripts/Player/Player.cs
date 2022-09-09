@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using UnityEngine.SceneManagement;
 
 public class Player : Unit
 {
@@ -143,7 +144,7 @@ public class Player : Unit
     #region ¸÷ Ãæµ¹ ÇÔ¼ö
     protected void Die()
     {
-
+        GameManager.Instance.GameOver();
     }
     public override float GetDamage()
     {
@@ -151,7 +152,7 @@ public class Player : Unit
         damage += Random.Range(damage / -damageRandomPercent, damage / damageRandomPercent);
         if (Random.Range(0f, 100f) <= stat.crit)
         {
-            damage *=  stat.critDmg / 100;
+            damage *= stat.critDmg / 100;
         }
         return damage;
     }
@@ -159,7 +160,7 @@ public class Player : Unit
     public void TakeHeal(float healAmount, bool isSkipText = false)
     {
         stat.hp += healAmount;
-        if(stat.hp > stat.maxHp)
+        if (stat.hp > stat.maxHp)
         {
             stat.hp = stat.maxHp;
         }
@@ -175,6 +176,7 @@ public class Player : Unit
                 GameManager.Instance.ShowText("MISS", transform.position, Color.white);
             return;
         }
+        SoundManager.Instance.PlaySound("hurt", SoundType.SE);
         stat.hp -= damage;
         if (stat.hp <= 0)
         {
@@ -208,11 +210,12 @@ public class Player : Unit
 
     protected void HitCheck()
     {
-        if (hurtInv)
-            return;
-        foreach (Enemy enemy in collisionEnemyList)
+        if (hurtInv || stat.hp <= 0) return;
+
+        foreach (Enemy enemy in collisionEnemyList.ToArray())
         {
-            if (enemy.dying) return;
+            if (enemy == null || !enemy.gameObject.activeSelf || enemy.dying) return;
+
             if (Random.Range(0f, 100f) <= stat.evade)
             {
                 TakeDamage(0, true);

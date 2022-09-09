@@ -4,11 +4,37 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using UnityEngine.SceneManagement;
+
+public enum GameOverButton
+{
+    Restart,
+    Title
+}
 
 public class UIManager : Singleton<UIManager>
 {
 
+    #region 게임 종료 변수
+    [Header("게임 종료 변수")]
+    [SerializeField] Image gameOverWindow;
+    [SerializeField] TextMeshProUGUI killText;
+    [SerializeField] TextMeshProUGUI recordText;
+    [SerializeField] Image[] gameOverButtons;
+
+    [SerializeField] Sprite selectGameOverButton;
+    [SerializeField] Sprite deselectGameOverButton;
+
+    private float deselctGameOverMovePosY = 0;
+    private float selectGameOverMovePosY = 50;
+
+    private bool gameOverActivating = false;
+
+    private int gameOverSlotIdx;
+    #endregion
+
     #region 무기 인벤토리 변수
+    [Header("무기 인벤토리 변수")]
     [SerializeField] GridLayoutGroup inventoryLayoutGroup;
     protected RectTransform inventoryRectTransform;
 
@@ -23,6 +49,7 @@ public class UIManager : Singleton<UIManager>
     #endregion
 
     #region 무기 획득 변수
+    [Header("무기 획득 변수")]
     [SerializeField] GameObject levelUpUI;
     [SerializeField] TMP_Text levelUpText;
 
@@ -49,11 +76,17 @@ public class UIManager : Singleton<UIManager>
     #endregion
 
     #region 타이머 변수
+    [Header("타이머 변수")]
     [SerializeField] TextMeshProUGUI timerText;
-    private float timer;
+    public float timer
+    {
+        get;
+        private set;
+    }
     #endregion
 
     #region 레벨 변수
+    [Header("레벨 변수")]
     [SerializeField] private Image lvBarImage;
     [SerializeField] private TextMeshProUGUI lvBarText;
     #endregion
@@ -70,6 +103,8 @@ public class UIManager : Singleton<UIManager>
         inventoryRectTransform.DOAnchorPosX(itemInventoryFadeOutPosX, itemInventoryFadeDuration);
         inventoryRectTransform.DOScaleX(1, itemInventoryFadeDuration);
 
+        gameOverWindow.gameObject.SetActive(false);
+
         timer = 0;
 
         UpdateLevel();
@@ -78,7 +113,10 @@ public class UIManager : Singleton<UIManager>
     private void Update()
     {
         if (!GameManager.Instance.isGaming)
+        {
+            UpdateGameOver();
             return;
+        }
         CheckInventoryUI();
         if (levelUpUI.gameObject.activeSelf)
             UpdateLevelUpUI();
@@ -89,6 +127,138 @@ public class UIManager : Singleton<UIManager>
     {
         return !levelUpUI.gameObject.activeSelf && Time.timeScale != 0 && GameManager.Instance.isGaming;
     }
+
+    #region 게임 오버 함수
+    public void GameOver()
+    {
+        gameOverWindow.gameObject.SetActive(true);
+        gameOverSlotIdx = 0;
+        gameOverActivating = false;
+
+        killText.gameObject.SetActive(false);
+        recordText.gameObject.SetActive(false);
+        foreach (Image image in gameOverButtons)
+            image.gameObject.SetActive(false);
+
+        StartCoroutine(GameOverCoroutine());
+    }
+
+    IEnumerator GameOverCoroutine()
+    {
+        var wait = new WaitForSecondsRealtime(1.5f);
+        SaveData saveData = SaveManager.Instance.saveData;
+        int maxTimer = saveData.maxTimer;
+
+        SoundManager.Instance.PlaySound("", SoundType.BGM);
+        SoundManager.Instance.PlaySound("button select");
+        killText.gameObject.SetActive(true);
+        yield return wait;
+
+        SoundManager.Instance.PlaySound("button select");
+        recordText.gameObject.SetActive(true);
+        recordText.text = "최고 기록 : " + ((int)maxTimer / 60).ToString("D2") + " : " + ((int)maxTimer % 60).ToString("D2");
+        yield return wait;
+
+        SoundManager.Instance.PlaySound("button select");
+        recordText.text += "\n현재 기록 : " + ((int)timer / 60).ToString("D2") + " : " + ((int)timer % 60).ToString("D2");
+        if (timer >= maxTimer)
+        {
+            recordText.text = "<#ffee00>최고 기록 : " + ((int)timer / 60).ToString("D2") + " : " + ((int)timer % 60).ToString("D2");
+            recordText.text += "\n<#ffffff>현재 기록 : " + ((int)timer / 60).ToString("D2") + " : " + ((int)timer % 60).ToString("D2");
+            recordText.text += "\n<#ffee00>NEW!";
+        }
+
+        yield return wait;
+        SoundManager.Instance.PlaySound("item get");
+        foreach (Image image in gameOverButtons)
+            image.gameObject.SetActive(true);
+
+        SaveManager.Instance.saveData.timer = (int)timer;
+        SaveManager.Instance.saveData.maxTimer = Mathf.Max((int)timer, SaveManager.Instance.saveData.maxTimer);
+
+        gameOverActivating = true;
+        UpdateGameOverSlot();
+    }
+    private void UpdateGameOver()
+    {
+        if (gameOverActivating)
+        {
+            if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
+                MoveLeftGameOverSlot();
+            else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
+                MoveRightGameOverSlot();
+            else if (Input.GetKeyDown(KeyCode.Z) || Input.GetKeyDown(KeyCode.Return))
+                SelectGameOverSlot();
+        }
+    }
+    private void MoveLeftGameOverSlot()
+    {
+        gameOverSlotIdx--;
+        if (gameOverSlotIdx < 0)
+            gameOverSlotIdx += gameOverButtons.Length;
+        UpdateGameOverSlot();
+    }
+
+    private void MoveRightGameOverSlot()
+    {
+        gameOverSlotIdx++;
+        if (gameOverSlotIdx >= gameOverButtons.Length)
+            gameOverSlotIdx -= gameOverButtons.Length;
+        UpdateGameOverSlot();
+    }
+
+    void GameOverTitle()
+    {
+        SceneManager.LoadScene("Title");
+    }
+    void GameOverRestart()
+    {
+        SceneManager.LoadScene("InGame");
+        SoundManager.Instance.PlaySound("bgm", SoundType.BGM);
+        GameManager.Instance.OnReset();
+    }
+
+    public void UpdateGameOverSlot()
+    {
+        for (int i = 0; i < gameOverButtons.Length; i++)
+            if (i == gameOverSlotIdx)
+            {
+                gameOverButtons[i].sprite = selectGameOverButton;
+                gameOverButtons[i].rectTransform.DOAnchorPosY(selectGameOverMovePosY, 0.3f).SetUpdate(true);
+            }
+            else
+            {
+                gameOverButtons[i].sprite = deselectGameOverButton;
+                gameOverButtons[i].rectTransform.DOAnchorPosY(deselctGameOverMovePosY, 0.3f).SetUpdate(true);
+            }
+    }
+
+    void SelectGameOverSlot()
+    {
+        SoundManager.Instance.PlaySound("button select", SoundType.SE);
+
+        if (Player.Instance != null)
+            Destroy(Player.Instance.gameObject);
+        DOTween.KillAll();
+        PoolManager.Instance.GameEnd();
+        SingletonCanvas.Instance.gameObject.SetActive(false);
+        gameOverWindow.gameObject.SetActive(false);
+        gameOverActivating = false;
+
+        Time.timeScale = 1;
+
+        GameOverButton gameOverButton = (GameOverButton)gameOverSlotIdx;
+        switch (gameOverButton)
+        {
+            case GameOverButton.Restart:
+                GameOverRestart();
+                break;
+            case GameOverButton.Title:
+                GameOverTitle();
+                break;
+        }
+    }
+    #endregion
 
     #region 무기 인벤토리 함수
     private void CheckInventoryUI()
@@ -175,6 +345,7 @@ public class UIManager : Singleton<UIManager>
     public void StartChooseItem(List<Item> items)
     {
         itemSlotActiviting = true;
+        SoundManager.Instance.PlaySound("level up", SoundType.SE);
         levelUpUI.gameObject.SetActive(true);
         Time.timeScale = 0;
 
@@ -218,6 +389,7 @@ public class UIManager : Singleton<UIManager>
     public void EndChooseItem(ItemSlot chooseItemSlot)
     {
         itemSlotActiviting = false;
+        SoundManager.Instance.PlaySound("item get", SoundType.SE);
 
         foreach (ItemSlot itemSlot in itemSlots)
             if (chooseItemSlot != itemSlot)

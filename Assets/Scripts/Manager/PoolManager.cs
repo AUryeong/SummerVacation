@@ -6,6 +6,12 @@ public class PoolManager : Singleton<PoolManager>
 
     private Dictionary<GameObject, List<GameObject>> pools = new Dictionary<GameObject, List<GameObject>>();
 
+    public void GameEnd()
+    {
+        foreach (List<GameObject> pool in pools.Values)
+            foreach (var obj in pool)
+                obj.gameObject.SetActive(false);
+    }
     public void AddPooling(GameObject origin, Transform parent)
     {
         if (!pools.ContainsKey(origin))
@@ -54,8 +60,8 @@ public class PoolManager : Singleton<PoolManager>
 
     public override void OnReset()
     {
-        foreach(List<GameObject> objs in pools.Values)
-            foreach(var obj in objs)
+        foreach (List<GameObject> objs in pools.Values)
+            foreach (var obj in objs)
                 obj.gameObject.SetActive(false);
     }
 }

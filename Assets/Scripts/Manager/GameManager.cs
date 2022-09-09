@@ -4,6 +4,7 @@ using UnityEngine;
 using TMPro;
 using DG.Tweening;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameManager : Singleton<GameManager>
 {
@@ -51,6 +52,15 @@ public class GameManager : Singleton<GameManager>
         PoolManager.Instance.OnReset();
 
         isGaming = true;
+    }
+
+    public void GameOver()
+    {
+        if (!isGaming)
+            return;
+        Time.timeScale = 0;
+        isGaming = false;
+        UIManager.Instance.GameOver();
     }
 
     public void OnKill(Enemy enemy)

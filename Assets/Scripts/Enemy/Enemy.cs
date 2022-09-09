@@ -93,7 +93,12 @@ public class Enemy : Unit
         enemyFlashWhiteCo = StartCoroutine(HitFlashWhite());
 
         if (stat.hp > 0)
+        {
+            SoundManager.Instance.PlaySound("hurt", SoundType.SE, 0.8f, 0.5f);
             return;
+        }
+        SoundManager.Instance.PlaySound("enemy", SoundType.SE, 0.6f);
+        SoundManager.Instance.PlaySound("enemy 1", SoundType.SE, 0.8f);
 
         dying = true;
         GameManager.Instance.OnKill(this);

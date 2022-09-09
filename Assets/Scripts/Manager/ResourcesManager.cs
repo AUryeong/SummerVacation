@@ -9,11 +9,13 @@ public class ResourcesManager : Singleton<ResourcesManager>
     private Dictionary<string, GameObject> projectiles = new Dictionary<string, GameObject>();
     private Dictionary<string, Sprite> itemIcons = new Dictionary<string, Sprite>();
     public Dictionary<string, Item> items = new Dictionary<string, Item>();
-
     public override void OnReset()
     {
         if (!isWritingResources)
             ReadResource();
+        else
+            foreach (Item item in items.Values)
+                item.OnReset();
     }
 
     public void ReadResource()
