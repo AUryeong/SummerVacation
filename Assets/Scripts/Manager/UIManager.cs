@@ -103,7 +103,7 @@ public class UIManager : Singleton<UIManager>
         inventoryRectTransform.DOAnchorPosX(itemInventoryFadeOutPosX, itemInventoryFadeDuration);
         inventoryRectTransform.DOScaleX(1, itemInventoryFadeDuration);
 
-        gameOverWindow.gameObject.SetActive(false);
+       // gameOverWindow.gameObject.SetActive(false);
 
         timer = 0;
 
